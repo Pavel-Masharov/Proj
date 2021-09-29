@@ -3,9 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+
+    
+    public Text bestText;
+   
+
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
@@ -18,10 +24,18 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
+    private int maxPoints;
+
+    private string n;
+   
+  
+      
     
     // Start is called before the first frame update
     void Start()
     {
+        LoadP();
+      
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -36,6 +50,7 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+       
     }
 
     private void Update()
@@ -60,17 +75,71 @@ public class MainManager : MonoBehaviour
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
+        MaxBuildPoints();
+        Information();
     }
+
 
     void AddPoint(int point)
     {
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"Score : {m_Points} " + Player.instance.name;
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    void Information()
+    {
+        bestText.text = "Best Score: " + maxPoints + " Name: " + n;
+       
+    }
+
+   
+       
+   
+   
+    void MaxBuildPoints()
+    {
+        if (m_Points > maxPoints)
+        {
+            maxPoints = m_Points;
+            SaveP();
+        }
+      
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public string nameP;
+        public int bestPoint;
+    }
+
+    public void SaveP()
+    {
+        SaveData data = new SaveData();
+        data.nameP = Player.instance.name;
+        data.bestPoint = maxPoints;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadP()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            n = data.nameP;
+            maxPoints = data.bestPoint;
+        }
     }
 }
